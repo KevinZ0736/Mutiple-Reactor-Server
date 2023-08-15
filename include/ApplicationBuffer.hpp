@@ -25,9 +25,9 @@ public: // peek, begin_write
 	[[nodiscard]] auto readable_iter() const { return buffer.begin() + static_cast<long>(readable_index); }
 	[[nodiscard]] auto writable_iter() const { return buffer.begin() + static_cast<long>(writable_index); }
 public:
-	[[nodiscard]] size_t ReadableBytes() const { return writable_index - readable_index; }
-	[[nodiscard]] size_t WritableBytes() const { return buffer.size() - writable_index; }
-	[[nodiscard]] size_t ReservedBytes() const { return readable_index - 0; }
+	[[nodiscard]] size_t ReadableBytes() const { return writable_index - readable_index; }  // 表示有多少可读数据
+	[[nodiscard]] size_t WritableBytes() const { return buffer.size() - writable_index; }   // 表示还能写多少数据
+	[[nodiscard]] size_t ReservedBytes() const { return readable_index - 0; }               // 可读索引与开头的距离
 
 public:
 	// 将数据追加到缓冲区的可写位置，并更新writable_index。
@@ -54,7 +54,7 @@ public:
 	{
 		if (len > ReadableBytes()) { return; }
 		if (len < ReadableBytes()) { readable_index += len; }
-		else { readable_index = reserved; writable_index = reserved; }
+		else { readable_index = reserved; writable_index = reserved; } // 将可读数据读完，指针置零
 	}
 	//  移动readable_index指针，用于标记已读取数据的部分。
 	void Advance() { Advance(ReadableBytes()); }

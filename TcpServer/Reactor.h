@@ -4,12 +4,15 @@
 #include "TimerContainer.h"
 
 // thread_local 变量提供了一种在线程间共享数据时避免竞态条件的方式。每个线程操作自己的副本，不需要使用锁或其他同步机制。
+// 需要在每个线程中初始化 tes 变量，以确保每个线程都有自己的 Reactor 实例。
 static thread_local Reactor* tes;
 
-// 主反应堆线程,Reactor包装了EpollPoller，并提供了任务队列，以使其它拥有Reactor对象指针的线程可以向IO线程添加任务。
+// 反应堆线程,Reactor包装了EpollPoller，并提供了任务队列，以使其它拥有Reactor对象指针的线程可以向IO线程添加任务。
 class Reactor :NoCopyable
 {
 private:
+	// 在不同线程中调用 epoll_create1(EPOLL_CLOEXEC) 将创建多个独立的 epoll 实例，它们之间不会共享任何状态。
+	// 多个线程或进程同时监听不同的事件，以实现高并发的网络处理。
 	EpollPoller poller;
 
 public:
