@@ -1,6 +1,7 @@
 ﻿#include "NoCopyable.h"
 #include "head/cpp_container.h"
 #include "Reactor.h"
+#include "console_log.hpp"
 
 class IOThreadPool :NoCopyable
 {

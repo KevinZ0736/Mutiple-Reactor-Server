@@ -1,8 +1,8 @@
 #include "TimerContainer.h"
 
-void TimerContainer::AddTimer(function<void()> cb, TimeStamp expire_time, double interval, Timer*& timer,CLogFile& logfile)
+void TimerContainer::AddTimer(function<void()> cb, TimeStamp expire_time, double interval, Timer*& timer)
 {
-	if (!cb) { logfile.Write("TimerContainer::AddTimer: add null function"); return; }
+	if (!cb) { err("TimerContainer::AddTimer: add null function") return; }
 
 	unique_ptr<Timer> timer_ptr = make_unique<Timer>(move(cb), expire_time, interval);
 	timer = timer_ptr.get();
@@ -15,8 +15,10 @@ void TimerContainer::AddTimer(function<void()> cb, TimeStamp expire_time, double
 bool TimerContainer::insert(unique_ptr<Timer> timer) // 应当在IO线程中被调用
 {
 	bool earliest_changed = false; // 最早到期时间是否改变
-	if (timer_map.empty() || timer->Expiration() < cbegin(timer_map)->first) 
-	{ earliest_changed = true; }
+	if (timer_map.empty() || timer->Expiration() < cbegin(timer_map)->first)
+	{
+		earliest_changed = true;
+	}
 
 	timer_map.emplace(timer->Expiration(), move(timer));
 
@@ -24,16 +26,16 @@ bool TimerContainer::insert(unique_ptr<Timer> timer) // 应当在IO线程中被�
 }
 
 
-void TimerContainer::CancelTimer(Timer* timer, CLogfile& logfile)
+void TimerContainer::CancelTimer(Timer* timer)
 {
 	// equal_range()：这是一个 std::map 的成员函数，用于查找与指定键相等的范围。它返回一个包含两个迭代器的 std::pair，表示范围的起始和结束位置。
 	auto pair = timer_map.equal_range(timer->Expiration());
 	// 没找到，begin指向map.end(),放入取消定时器的set。
-	if (pair.first == end(timer_map) && calling_expired_timers) 
+	if (pair.first == end(timer_map) && calling_expired_timers)
 	{
 		canceling_timer_set.emplace(timer);
 	}
-	else if (pair.first == end(timer_map)) { logfile.Write("取消一个不存在的定时器！"); }
+	else if (pair.first == end(timer_map)) { err("取消一个不存在的定时器！") }
 	// 某一时刻a，b两个定时器都超时，都被移到了expired vector中，先执行a的回调函数，紧接着就去执行b的回调函数，而b的回调函数中就是移除a定时器。
 	for (auto it = pair.first; it != pair.second; ++it) // 同一时间戳上设置的定时器数目不会太多，这么做不会影响性能。
 	{
@@ -46,7 +48,7 @@ void TimerContainer::HandleRead() // 该函数应该在IO线程中被调用
 	TimeStamp now(TimeStamp::Now()); // info("read_timerfd at ", now.ToFormatString())
 
 	read_timerfd(timer_fd.fd); // 读取到时事件
-	
+
 	vector< pair<TimeStamp, unique_ptr<Timer>> > expired;
 	auto end_iter = timer_map.upper_bound(now); // upper_bound : 第一个大于 找到最后一个超时的时间戳
 	copy(make_move_iterator(begin(timer_map)), make_move_iterator(end_iter), back_inserter(expired));// 将超时的时间戳放入vector;

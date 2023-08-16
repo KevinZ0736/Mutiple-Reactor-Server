@@ -1,11 +1,11 @@
 #include "Acceptor.h"
 
-Acceptor::Acceptor(EpollPoller& epoller, const Sockaddr_in& listen_address, CLogFile& logfile)
+Acceptor::Acceptor(EpollPoller& epoller, const Sockaddr_in& listen_address)
 	: listen_fd(open_socket()), new_conn_register(epoller, listen_fd.fd), dummy_fd(open_null())
 {
 	int ret = ::bind(listen_fd.fd, (struct sockaddr*)&listen_address.addr, static_cast<socklen_t>(sizeof(struct sockaddr_in)));
 	if (ret == -1) { perror("Acceptor::ctor::bind"); exit(EXIT_FAILURE); }
-	
+
 	// 设置读取连接请求的 回调函数
 	new_conn_register.SetReadCallBack
 	(
@@ -14,7 +14,7 @@ Acceptor::Acceptor(EpollPoller& epoller, const Sockaddr_in& listen_address, CLog
 			Sockaddr_in peer_addr{};
 			auto len = static_cast<socklen_t>(sizeof peer_addr.addr);
 			int conn_fd = accept4(listen_fd.fd, (struct sockaddr*)&peer_addr.addr, &len, SOCK_NONBLOCK | SOCK_CLOEXEC);
-			
+
 			if (conn_fd != -1)  // 连接成功
 			{
 				if (new_conn_callback) { new_conn_callback(conn_fd, peer_addr); }
@@ -30,7 +30,7 @@ Acceptor::Acceptor(EpollPoller& epoller, const Sockaddr_in& listen_address, CLog
 					close(dummy_fd.fd);
 					dummy_fd.fd = open_null();
 
-					logfile.Write("accept: EMFILE");
+					err("accept: EMFILE");
 				}
 			}
 		}
@@ -39,11 +39,11 @@ Acceptor::Acceptor(EpollPoller& epoller, const Sockaddr_in& listen_address, CLog
 	//start_listen();
 }
 
-void Acceptor::start_listen(CLogFile& logfile)
+void Acceptor::start_listen()
 {
 	int ret = listen(listen_fd.fd, SOMAXCONN);
 	if (ret == -1) { perror("Acceptor::start_listen::listen"); exit(EXIT_FAILURE); } // 可能是端口被占用
 
-	new_conn_register.InterestReadableEvent(); 
-	logfile.write("Acceptor开始监听连接！！！");
+	new_conn_register.InterestReadableEvent();
+	info("Acceptor开始监听连接！！！");
 }

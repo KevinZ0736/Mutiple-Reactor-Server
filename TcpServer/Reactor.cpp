@@ -45,7 +45,7 @@ void Reactor::AddTask(function<void()> cb) // trace("AddTask! InIOThread = ", In
 	if (!InIOThread() || handling_tasks) { poller.WakeUp(); }
 }
 
-// 如果是IO线程，直接执行，非IO线程，放入IO队列
+// 如果是IO线程，直接执行，非IO线程，放入IO队列，避免陷入死循环调用
 void Reactor::Execute(function<void()> cb)
 {
 	if (InIOThread()) { cb(); }

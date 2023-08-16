@@ -16,10 +16,10 @@ void IOThreadPool::Start()
 					lock_guard<mutex> gurad(mtx); // 此处必须加锁，否则会出现double free or corruption (out) Aborted。 详见test中的测试。
 
 					this->sub_reactor_vector.push_back(&reactor);
-					if (this->sub_reactor_vector.size() == this->thread_count) { this->cv.notify_one(); }
+					if (this->sub_reactor_vector.size() == this->thread_count) { this->cv.notify_one(); }  // 保持创建Reactor与创建线程的同步
 				}
 
-				reactor.React();
+				reactor.React(); // 让Reactor处理触发的事件
 			}
 		);
 	}

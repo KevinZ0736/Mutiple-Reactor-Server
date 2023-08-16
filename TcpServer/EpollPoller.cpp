@@ -1,6 +1,6 @@
 ﻿#include "EpollPoller.h"
 
-void EpollPoller::poll(int ms_timeout, CLogFile& logfile)
+void EpollPoller::poll(int ms_timeout)
 {
 	int active_events = epoll_wait(epoll_fd.fd, events_vector.data(), static_cast<int>(events_vector.size()), ms_timeout);
 
@@ -21,7 +21,7 @@ void EpollPoller::poll(int ms_timeout, CLogFile& logfile)
 			events_vector.resize(events_vector.size() * 2);  // 存储事件容器 扩容
 		}
 	}
-	else if (active_events == 0) { logfile.Write("epoll_wait阻塞等待了", ms_timeout, "毫秒，仍没有感兴趣的事件发生，epoll_wait返回0"); }
+	else if (active_events == 0) { info("epoll_wait阻塞等待了", ms_timeout, "毫秒，仍没有感兴趣的事件发生，epoll_wait返回0") }
 	else if (active_events == -1) { perror("EpollPoller::poll::epoll_wait"); }
 }
 

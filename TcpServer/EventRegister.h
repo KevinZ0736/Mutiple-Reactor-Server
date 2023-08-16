@@ -2,6 +2,7 @@
 #include <sys/epoll.h>
 #include <cpp_header/cpp_smartptr.h>
 #include "NoCopyable.h"
+#include "console_log.hpp"
 
 //在不包含完整定义的情况下引入实体的名称，用于解决头文件的循环包含问题和提高编译效率。
 class EpollPoller;

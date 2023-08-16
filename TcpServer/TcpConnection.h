@@ -3,6 +3,7 @@
 #include "ApplicationBuffer.hpp"
 #include "FdGuard.hpp"
 #include "Sockaddr_in.hpp"
+#include "console_log.hpp"
 
 // 模板类 enable_shared_from_this 的使用。
 // 它允许一个对象在被智能指针管理的情况下，获得一个指向自身的 shared_ptr。

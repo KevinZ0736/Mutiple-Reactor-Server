@@ -4,6 +4,7 @@
 #include "TcpConnection.h"
 #include "Acceptor.h"
 #include "IOThreadPool.h"
+#include "console_log.hpp"
 
 class TcpServer : NoCopyable
 {
@@ -26,7 +27,7 @@ public:
 private:
 	Acceptor acceptor;
 	int next_connId{ 1 };
-	void EstablishNewConnection(int conn_fd, const Sockaddr_in& peer_addr); // 只在IO线程中调用
+	void EstablishNewConnection(int conn_fd, const Sockaddr_in& peer_addr); // 建立一个新的连接，只在IO线程中调用
 
 private:
 	map<string, shared_ptr<TcpConnection>> connection_map; // 连接列表： 连接名-连接对象的指针

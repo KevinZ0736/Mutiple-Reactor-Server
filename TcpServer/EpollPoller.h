@@ -3,9 +3,8 @@
 #include "cpp_container.h"
 #include "EventRegister.h"
 #include "File_Operation.h"  //统一管理文件标识符
-#include "_public.h"
+#include "console_log.hpp"
 
-class CLogFile;
 
 class EpollPoller : NoCopyable
 {
@@ -15,7 +14,7 @@ private:
 	vector<EventRegister*> active_registers;       // 将epoll中的事件与eventregister绑定，存储出发时间的容器中
 
 public:
-	void poll(int ms_timeout = 10'000, CLogFile& logfile); // 超时时间默认为10秒，从epollfd 句柄中获取已经触发的事务
+	void poll(int ms_timeout = 10'000); // 超时时间默认为10秒，从epollfd 句柄中获取已经触发的事务
 	void HandleActiveEvents();          // 处理触发事件
 
 private:

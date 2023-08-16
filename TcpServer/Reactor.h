@@ -2,6 +2,7 @@
 #include "FdGuard.hpp"
 #include "EpollPoller.h"
 #include "TimerContainer.h"
+#include "console_log.hpp"
 
 // thread_local 变量提供了一种在线程间共享数据时避免竞态条件的方式。每个线程操作自己的副本，不需要使用锁或其他同步机制。
 // 需要在每个线程中初始化 tes 变量，以确保每个线程都有自己的 Reactor 实例。
@@ -19,7 +20,7 @@ public:
 	EpollPoller& GetPoller() { return poller; }
 
 private:
-	const thread::id tid{ std::this_thread::get_id() };
+	const thread::id tid{ std::this_thread::get_id() }; // 在IO ThreadPOOL中 创建线程时 ，同时创建Reactor,并获得当时创建的线程id
 
 public:
 	[[nodiscard]] thread::id GetTid() const { return tid; }
@@ -44,7 +45,7 @@ public:
 	void Execute(function<void()> cb); // 被HandleEvent()或HandleTask()的中执行的任务函数调用。如果在io线程中,直接执行回调函数;否则执行AddTask()。
 
 private:
-	TimerContainer timer_container;
+	TimerContainer timer_container; // 定时器，外部事件可以向Reactor注册定时事件
 public:
 	int i = 0;
 	void CallAt(const TimeStamp time, const function<void()>& cb, Timer*& timer) { Execute([this, time, cb, &timer]() {timer_container.AddTimer(cb, time, 0.0, timer); }); } // 不能对这里的cb使用move, 否则会使得cb为空。

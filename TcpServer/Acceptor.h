@@ -4,8 +4,7 @@
 #include "EventRegister.h"
 #include "EpollPoller.h"
 #include "Sockaddr_in.hpp"
-#include "_public.h"
-
+#include "console_log.hpp"
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -14,7 +13,6 @@
 // 前置声明，解决循环依赖
 class Sockaddr_in;
 class EpollPoller;
-class CLogFile;
 
 class Acceptor : NoCopyable
 {
@@ -26,14 +24,14 @@ private:
 
 private:
 	// 绑定连接的回调函数，参数为socket与socket的绑定对象
-	function<void(int conn_fd, const Sockaddr_in& peer_addr)> new_conn_callback; 
+	function<void(int conn_fd, const Sockaddr_in& peer_addr)> new_conn_callback;
 	// 被TcpServer设置为TcpServer::EstablishNewConnection。Acceptor将accept得到的conn_fd和对等方的地址传入该回调函数。
 public:
 	void SetNewConnCallback(function<void(int conn_fd, const Sockaddr_in& peer_addr)> cb) { new_conn_callback = move(cb); }
 
 public:
-	Acceptor(EpollPoller& epoller, const Sockaddr_in& listen_address, CLogFile& logfile);
+	Acceptor(EpollPoller& epoller, const Sockaddr_in& listen_address);
 	~Acceptor() = default;
 
-	void start_listen(CLogFile& logfile);
+	void start_listen();
 };
