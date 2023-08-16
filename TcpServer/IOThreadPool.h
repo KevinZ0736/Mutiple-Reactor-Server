@@ -1,4 +1,4 @@
-﻿#include "NoCopyable.h"
+﻿#include "../include/head/NoCopyable.h"
 #include "head/cpp_container.h"
 #include "Reactor.h"
 #include "console_log.hpp"

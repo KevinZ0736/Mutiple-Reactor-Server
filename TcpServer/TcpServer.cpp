@@ -27,7 +27,7 @@ void TcpServer::EstablishNewConnection(int conn_fd, const Sockaddr_in& peer_addr
 	string conn_name = name + buf;
 
 	Reactor& reactor = IO_threadpool.GetReactor();  // 分配一个IO线程给新的连接，轮询分配以实现一定的负载均衡
-	shared_ptr<TcpConnection> conn(make_shared<TcpConnection>(reactor, conn_name, conn_fd, listen_addr, peer_addr));
+	shared_ptr<TcpConnection> conn(make_shared<TcpConnection>(reactor, conn_name, conn_fd, listen_addr, peer_addr)); // 建立一个新的TcpConnection
 	conn->SetConnCallback(connection_callback);
 	conn->SetMessageCallback(message_callback);
 	conn->SetWriteCompleteCallback(writeComplete_callback);
@@ -54,10 +54,14 @@ TcpServer::TcpServer(const Sockaddr_in& _listen_addr, string nm, size_t sub_reac
 	: listen_addr(_listen_addr), port(listen_addr.PortString()),
 	name(move(nm)),
 	IO_threadpool(main_reactor, sub_reactor_count),
-	acceptor(main_reactor.GetPoller(), listen_addr)
+	acceptor(main_reactor.GetPoller(), listen_addr)  // 主线程负责acceptor
 {
-	acceptor.SetNewConnCallback([this](auto&& PH1, auto&& PH2) { EstablishNewConnection(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2)); });
+	/*std::forward 用于实现完美转发，确保在函数调用中保持参数的值类别，避免不必要的拷贝和移动。
+		&& （右值引用）用于实现移动语义，支持高效的资源管理和转移。
+		std::move 用于将对象转换为右值引用，从而支持移动语义。*/
 
+	acceptor.SetNewConnCallback([this](auto&& PH1, auto&& PH2) { EstablishNewConnection(std::forward<decltype(PH1)>(PH1), std::forward<decltype(PH2)>(PH2)); });
+	// 给accept建立回调函数
 	ignore_SIGPIPE();
 }
 

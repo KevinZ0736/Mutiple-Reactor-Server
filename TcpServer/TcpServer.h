@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "NoCopyable.h"
+#include "../include/head/NoCopyable.h"
 #include "head/cpp_container.h"
 #include "TcpConnection.h"
 #include "Acceptor.h"

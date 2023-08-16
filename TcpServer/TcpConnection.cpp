@@ -9,7 +9,8 @@ TcpConnection::TcpConnection(Reactor& re, string nm, int connection_fd, const So
 	event_register.SetReadCallBack([this] { HandleRead(); });
 	event_register.SetWriteCallBack([this] { HandleWrite(); });
 	event_register.SetCloseCallBack([this] { HandleClose(); });
-	event_register.SetErrorCallBack([this] { HandleError(); }); // info("创建了一个TcpConnection对象, 对等方地址为 ", peer_addr.IpPortString(), "  服务器地址为 ", self_addr.IpPortString())
+	event_register.SetErrorCallBack([this] { HandleError(); });
+	// info("创建了一个TcpConnection对象, 对等方地址为 ", peer_addr.IpPortString(), "  服务器地址为 ", self_addr.IpPortString())
 
 	int opt = 1;
 	int ret = ::setsockopt(conn_fd.fd, SOL_SOCKET, SO_KEEPALIVE, &opt, static_cast<socklen_t>(sizeof opt));
@@ -40,13 +41,16 @@ void TcpConnection::HandleWrite()
 	{
 		event_register.UnInterestWritableEvent(); // 停止关注EPOLLOUT事件，以免出现busy loop.EPOLL ET模式只要在最开始关注EPOLLOUT事件即可。如果频繁触发EPOLLOUT事件，则用ET模式性能更好。
 		if (write_complete_callback) { reactor.AddTask([this] { write_complete_callback(shared_from_this()); }); }
-		if (state == ConnectionState::Disconnecting) { shutdown(conn_fd.fd, SHUT_WR); } // 这是一个系统调用，用于关闭套接字的写入端。conn_fd.fd 表示套接字描述符，SHUT_WR 是一个常量，表示关闭写入端。fixme:改写了muduo
+		if (state == ConnectionState::Disconnecting) { shutdown(conn_fd.fd, SHUT_WR); }
+		// 调用 shutdown 并不会立即关闭套接字，而是通知对方不再发送数据。实际的连接关闭需要双方都执行相应的操作。
+		// 在关闭读取端和写入端后，可以使用 close(conn_fd.fd) 函数来关闭套接字并释放资源。
 	}
 }
 
 void TcpConnection::HandleClose()
 {
-	if (!reactor.InIOThread()) { fatal("不能够跨线程调用HandleClose函数！") } if (!(state == ConnectionState::Connected || state == ConnectionState::Disconnecting)) { fatal("TcpConnection异常地调用了HandleClose()！") }
+	if (!reactor.InIOThread()) { fatal("不能够跨线程调用HandleClose函数！") }
+	if (!(state == ConnectionState::Connected || state == ConnectionState::Disconnecting)) { fatal("TcpConnection异常地调用了HandleClose()！") }
 	state = ConnectionState::Disconnected;
 
 	event_register.UnInterestAllEvents();
@@ -93,7 +97,8 @@ void TcpConnection::ConnectionEstablished() // 连接建立时，被TcpServer加
 
 
 // 负责尝试将数据写入发送缓冲区并注册写事件,注意拆分写入缓冲区与填入内核的操作的用处
-void TcpConnection::Send(const char* data, size_t len) // 尝试向内核缓冲区中写，内核缓冲区满后向应用层输出缓冲区中写。
+// 尝试向内核缓冲区中写，内核缓冲区满后，剩余数据向应用层输出缓冲区中写。不用循环，通过epoll一直触发写事件，来将剩余数据写入，
+void TcpConnection::Send(const char* data, size_t len)
 {
 	if (!reactor.InIOThread()) { fatal("不能够跨线程调用Send函数！") }
 	if (state == ConnectionState::Disconnected) { err("call send at Disconnected TcpConnection") return; }
@@ -101,9 +106,11 @@ void TcpConnection::Send(const char* data, size_t len) // 尝试向内核缓冲�
 
 	ssize_t wrote_bytes{ 0 };      // 已写数据，有符号数
 	size_t remaining_bytes{ len };  // 剩余数据，无符号数
-	if (write_buffer.ReadableBytes() == 0 && !event_register.MonitoringWritable()) // 内核发送缓冲区尚有空间，直接发送。
+
+	// 内核发送缓冲区尚有空间，直接发送。在首次写入时触发一次，之后用handlewrite处理写事件就可以
+	if (write_buffer.ReadableBytes() == 0 && !event_register.MonitoringWritable())
 	{
-		wrote_bytes = ::write(conn_fd.fd, data, len);
+		wrote_bytes = ::write(conn_fd.fd, data, len); //与 send()函数作用大致相同
 		if (wrote_bytes != -1)
 		{
 			remaining_bytes -= wrote_bytes;
@@ -114,13 +121,17 @@ void TcpConnection::Send(const char* data, size_t len) // 尝试向内核缓冲�
 			//在write_complete_callback调用Send函数，向客户端发送数据（见CharacterGenerator.cpp），
 			//如果是reactor.Execute（...）而不是reactor.AddTask(...)，则会循环调用Send()和write_complete_callback，进而爆栈。
 		}
+		// EWOULDBLOCK 是一个错误码（错误号）在 POSIX 操作系统中的定义，表示资源暂时不可用，通常与非阻塞 I/O 操作相关。
+		// 在一些操作系统中，也可能用 EAGAIN 表示相同的错误。
+		// 具体来说，EWOULDBLOCK 表示在非阻塞 I / O 操作中，操作无法立即完成，因为没有可用的资源（例如套接字缓冲区已满）。
 		else if (errno == EWOULDBLOCK) { wrote_bytes = 0; }
 		else { perror("TcpConnection::Send::write"); return; }
 	}
-
+	//若仍有剩余数据未写入，将剩余数据追加到发送缓冲区中，并监视可写事件
 	if (remaining_bytes > 0)
 	{
 		size_t old_len = write_buffer.ReadableBytes();
+		// 处理缓冲区溢出的情况
 		if (old_len < buffer_full_size && old_len + remaining_bytes >= buffer_full_size && buffer_full_callback) // 如果上一次已经触发过buffer_full_callback，但没有得到处理，这一次就不再触发。
 		{
 			reactor.AddTask([this, old_len, remaining_bytes]() { buffer_full_callback(shared_from_this(), old_len + remaining_bytes); });
@@ -134,7 +145,7 @@ void TcpConnection::Send(const char* data, size_t len) // 尝试向内核缓冲�
 void TcpConnection::SendAcrossThreads(const char* data, size_t len) // 计算线程池中的计算线程处理计算密集型任务，得到结果后跨线程调用Send函数。
 {
 	shared_ptr<TcpConnection> guard(shared_from_this());
-	reactor.AddTask([guard, data, len] { guard->Send(data, len); });
+	reactor.AddTask([guard, data, len] { guard->Send(data, len); }); // 放入reactor中，在IO线程中顺序执行，保证线程安全
 	//reactor.AddTask([this, data, len] { Send(data, len); } );
 }
 
@@ -144,7 +155,11 @@ void TcpConnection::ShutDown()
 	if (!reactor.InIOThread()) { fatal("不能够跨线程调用ShutDown函数！") }
 	if (state != ConnectionState::Connected) { return; }
 	state = ConnectionState::Disconnecting;
-	if (event_register.MonitoringWritable()) { return; } // conn->send(file)；conn->shutdown()；像这样的调用是安全的。 如果还在发送数据，就不应该关闭写端。同时TcpConnection::ShutDown()并不是不做任何事，它将状态改为Disconnecting。当内核缓冲区中的数据发送完毕之后，可写事件产生，调用handleWrite函数，该函数中又调用了shutdown
+	if (event_register.MonitoringWritable()) { return; }
+
+	// conn->send(file)；conn->shutdown()；像这样的调用是安全的。 如果还在发送数据，就不应该关闭写端。
+	// 同时TcpConnection::ShutDown()并不是不做任何事，它将状态改为Disconnecting。
+	// 当内核缓冲区中的数据发送完毕之后，可写事件产生，调用handleWrite函数，该函数中又调用了shutdown
 
 	int ret = shutdown(conn_fd.fd, SHUT_WR);
 	if (ret == -1) { perror("shutdown"); }

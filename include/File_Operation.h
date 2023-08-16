@@ -9,6 +9,7 @@
 #include <sys/timerfd.h>
 #include "TimeStamp.hpp"
 
+// 统一事件源
 //以下这些函数执行失败时，会直接退出程序
 #pragma once
 extern int open_socket(); // 创建SOCK_NONBLOCK | SOCK_CLOEXEC的tcp socket, 并设置端口复用。

@@ -1,7 +1,7 @@
 #pragma once
 #include <sys/epoll.h>
-#include <cpp_header/cpp_smartptr.h>
-#include "NoCopyable.h"
+#include "../include/head/cpp_smartptr.h"
+#include "../include/head/NoCopyable.h"
 #include "console_log.hpp"
 
 //在不包含完整定义的情况下引入实体的名称，用于解决头文件的循环包含问题和提高编译效率。
@@ -44,7 +44,9 @@ public:
 	[[nodiscard]] bool MonitoringNothing() const { return events == none_event; }   // 判断事件是不是空时间
 
 private:
+	// 定义连接后执行的回调函数
 	function<void()> connection_callback;
+	// 定义读事件后的回调函数
 	function<void()> read_callback;
 	function<void()> write_callback;
 	function<void()> error_callback;

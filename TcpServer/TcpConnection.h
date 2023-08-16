@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "NoCopyable.h"
+#include "../include/head/NoCopyable.h"
 #include "ApplicationBuffer.hpp"
 #include "FdGuard.hpp"
 #include "Sockaddr_in.hpp"
@@ -57,15 +57,15 @@ public:
 
 private:
 	void HandleRead(); // 这四个成员函数被注册给event_register
-	void HandleWrite();
+	void HandleWrite();  // 写事件的回调函数，将数据缓冲区的剩余数据发送，关闭写事件
 	void HandleClose();
 	void HandleError() const;
 public:
 	void OnDestroyConnection();    // 关闭该Tcp连接
 	void ConnectionEstablished();  // 建立Tcp连接
 public:
-	void Send(const char* data, size_t len);
-	void SendAcrossThreads(const char* data, size_t len);
+	void Send(const char* data, size_t len); // Send() 函数尝试将数据直接发送到套接字的内核缓冲区。如果内核缓冲区有足够的空间，数据会被写入到内核缓冲区中。
+	void SendAcrossThreads(const char* data, size_t len); // SendAcrossThreads() 函数是一种特殊情况，用于实现多线程环境下的数据发送。
 public:
 	void ShutDown();          // 关闭连接
 	void ShutDownAcrossThreads();

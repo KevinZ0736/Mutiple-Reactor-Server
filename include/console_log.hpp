@@ -1,8 +1,8 @@
 // trivial_test
 // Created by kiki on 2021/12/2.11:29
 #pragma once
-#include "./cpp_header/cpp_thread.h"
-#include "./cpp_header/cpp_container.h"
+#include "./head/cpp_thread.h"
+#include "./head/cpp_container.h"
 #include <iostream>
 using std::clog; // clog与cerr都是输出到标准错误，clog带缓冲，cerr不带缓冲。
 
@@ -29,9 +29,9 @@ template <typename First, typename... Args> // 可以使用万能引用和完美
 void
 consile_print
 (
- string_view colour,
- string_view file, int line, string_view function, std::thread::id tid,
- const First& first, const Args&... args
+	string_view colour,
+	string_view file, int line, string_view function, std::thread::id tid,
+	const First& first, const Args&... args
 )
 {
 	lock_guard<mutex> guard(global_log_mutex);
@@ -42,7 +42,7 @@ consile_print
 
 	clog << first;
 	auto out_with_space =
-	[](const auto& arg)
+		[](const auto& arg)
 	{
 		clog << ' ' << arg;
 	};
