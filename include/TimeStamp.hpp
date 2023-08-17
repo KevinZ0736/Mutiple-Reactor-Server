@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <algorithm>
 #include <sys/time.h> // typedef long __time_t typedef __time_t time_t
@@ -22,7 +23,7 @@ public:
 		suseconds_t tv_usec;    // 微秒数（百万分之一秒）
 		}
 		注意，tv_sec 的类型是 time_t，这是一个整数类型，通常是一个带符号的整数，
-		用于存储从 1970 年 1 月 1 日午夜（UTC）开始到现在的秒数     
+		用于存储从 1970 年 1 月 1 日午夜（UTC）开始到现在的秒数
 		*/
 		struct timeval tv {};
 		// gettimeofday 函数获取当前时间，并将秒数和微秒数分别存储在 currentTime.tv_sec 和 currentTime.tv_usec 中。

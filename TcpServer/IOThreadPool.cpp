@@ -16,7 +16,7 @@ void IOThreadPool::Start()
 					lock_guard<mutex> gurad(mtx); // 此处必须加锁，否则会出现double free or corruption (out) Aborted。 详见test中的测试。
 
 					this->sub_reactor_vector.push_back(&reactor);
-					if (this->sub_reactor_vector.size() == this->thread_count) { this->cv.notify_one(); }  // 保持创建Reactor与创建线程的同步
+					if (this->sub_reactor_vector.size() == this->thread_count) { this->cond.notify_one(); }  // 保持创建Reactor与创建线程的同步
 				}
 
 				reactor.React(); // 让Reactor处理触发的事件
@@ -25,7 +25,7 @@ void IOThreadPool::Start()
 	}
 
 	unique_lock<mutex> ulock(mtx);
-	cv.wait(ulock, [this]() {return sub_reactor_vector.size() == thread_count; }); // 等待所有IO线程都创建完毕,再结束
+	cond.wait(ulock, [this]() {return sub_reactor_vector.size() == thread_count; }); // 等待所有IO线程都创建完毕,再结束
 }
 
 IOThreadPool::IOThreadPool(Reactor& reactor, size_t count) : main_reactor(reactor), thread_count(count) // trace("IO线程池将要调用Start()！")

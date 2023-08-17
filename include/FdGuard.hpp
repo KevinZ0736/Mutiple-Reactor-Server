@@ -1,3 +1,4 @@
+#pragma once
 #include <unistd.h> // close
 
 // 文件描述符的封装，将fd隐转int

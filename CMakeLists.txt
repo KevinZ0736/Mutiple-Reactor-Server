@@ -14,11 +14,10 @@ project ("WebServer-H")
 # 测试程序生成的路径
 set(TEST_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin)
 
-# 静态库生成的路径
-set(LIB_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lib})
-
 # 头文件目录
 set(HEAD_PATH ${CMAKE_CURRENT_SOURCE_DIR}/include)
+set(TCP_HEAD ${CMAKE_CURRENT_SOURCE_DIR}/TcpServer)
+
 
 # 静态库的名字
 set(CALC_LIB calc)

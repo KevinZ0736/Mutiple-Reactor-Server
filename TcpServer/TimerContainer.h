@@ -4,12 +4,10 @@
 #include "FdGuard.hpp"
 #include "Timer.hpp"
 #include "EventRegister.h"
-#include "Reactor.h"
 #include "File_Operation.h"
 #include "console_log.hpp"
 // 定时器的目的是在预定的时间点执行某项任务，
 // 例如在一段时间后执行某项操作、定期执行某个任务，或者在特定的日期和时间触发事件。
-class Reactor;
 
 class TimerContainer :NoCopyable
 {

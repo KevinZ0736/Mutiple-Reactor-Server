@@ -1,4 +1,5 @@
-﻿#include "FdGuard.hpp"
+﻿#pragma once
+#include "FdGuard.hpp"
 #include "../include/head/NoCopyable.h"
 #include "../include/head/cpp_container.h"
 #include "EventRegister.h"
