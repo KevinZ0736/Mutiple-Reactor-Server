@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DBconfig>
+	<ip>124.222.175.81</ip>
+	<port>3306</port>
+	<userName>root</userName>
+	<password>kevin</password>
+	<dbName>testdb</dbName>
+	<minSize>20</minSize>
+	<maxSize>100</maxSize>
+	<maxIdleTime>5000</maxIdleTime>
+	<timeout>1000</timeout>
+</DBconfig>

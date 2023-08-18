@@ -59,13 +59,15 @@ public:
 
 private:
 	weak_ptr<void> hold_ptr; // 与TcpConnection对象的生存期有关，weak_ptr不控制对象的生命周期，但是，它知道对象是否还活着。查看所指向的对象是否有效
-	bool held{ false };      // 是否持有TcpConnention的资源
+	bool held{ false };      // TcpConnection对象是否存在
 public:
-	void hold(const shared_ptr<void>& obj) { hold_ptr = obj; held = true; } // 去持有TcpConnection的资源
+	void hold(const shared_ptr<void>& obj) { hold_ptr = obj; held = true; }
+	//  将weak升级为share,保证在触发 TcpConnection 断开机制后，能先让 TcpConnection 先把数据发送完再释放
 
 public:
 	void HandleEvent();        // 处理事件
-	// EventRegister::HandleEvent() 函数根据 triggered_events 中的事件标志，执行相应的事件回调函数，用于处理不同类型的事件。
+	// EventRegister::HandleEvent() 函数根据 triggered_events 中的事件标志，
+	// 执行相应的事件回调函数，用于处理不同类型的事件。
 	// 同时，它还处理可能存在的 hold_ptr，以确保资源的生命周期控制
 
 public:

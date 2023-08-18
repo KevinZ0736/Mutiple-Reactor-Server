@@ -112,7 +112,7 @@ public:
 	{
 		const size_t writable = WritableBytes();
 
-		char extra_buf[65536]; // 64K
+		char extra_buf[65536]; // 临时的栈上空间
 
 		// 用于在一个系统调用中传递多个非连续的缓冲区。
 		struct iovec vec[2];

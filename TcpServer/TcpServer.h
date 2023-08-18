@@ -30,7 +30,8 @@ private:
 	void EstablishNewConnection(int conn_fd, const Sockaddr_in& peer_addr); // 建立一个新的连接，只在IO线程中调用
 
 private:
-	map<string, shared_ptr<TcpConnection>> connection_map; // 连接列表： 连接名-连接对象的指针
+	map<string, shared_ptr<TcpConnection>> connection_map;
+	// 连接列表： 连接名-连接对象的指针,即使用户手动 reset() ，引用计数也不会降为 1，因为connections_ 中还有副本。
 
 private: // 这里的shared_ptr以值传递或以引用传递都可以,不影响引用计数。
 	function<void(shared_ptr<TcpConnection>)> connection_callback; // 应用层注册的，连接建立后的回调函数。该回调被设置给TcpConnection对象。
